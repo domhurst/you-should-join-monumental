@@ -32,6 +32,14 @@ body.cream .cell{background:rgba(26,2,77,.05)}
 .themebtn{all:unset;cursor:pointer;width:18px;height:18px;background:var(--cream);border:1px solid var(--rule-strong);opacity:.18;transition:opacity .2s}
 body.cream .themebtn{background:var(--indigo)}
 .themebtn:hover,.themebtn:focus-visible{opacity:1}
+/* sound: off by default; the button only appears on slides with video */
+.soundbtn{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;margin-right:28px;font:600 22px/1 var(--sans);letter-spacing:.01em;text-transform:lowercase;opacity:.75;transition:opacity .2s}
+.soundbtn svg{width:26px;height:26px;display:block}
+.soundbtn .on{display:none}
+.soundbtn:hover,.soundbtn:focus-visible{opacity:1}
+body.sound .soundbtn{color:var(--orange);opacity:1}
+body.sound .soundbtn .on{display:block}
+body.sound .soundbtn .off{display:none}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--ground);color:var(--ink);font-family:var(--sans);overflow:hidden}
 body{display:grid;place-items:center}
@@ -108,7 +116,7 @@ body.hint #help{opacity:.6}
 <body class="hint">
 <div id="stage"></div>
 <div id="over"></div>
-<div id="help">T theme · → / space / click next · ← / click left edge back · F fullscreen · G overview · K pause video</div>
+<div id="help">T theme · → / space / click next · ← / click left edge back · F fullscreen · G overview · K pause video · M sound</div>
 
 <script>
 const LOGO='<svg class="logo" viewBox="0 0 118 27" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Monumental"><path fill="currentColor" d="M118 22.15v3.584h-8.946V.427h4.407v21.724H118ZM101.452 18.635h1.822l-.795-10.057-1.027 10.057ZM105.097.427l3.379 25.24h-4.44l-.332-3.517h-2.618l-.332 3.518h-3.677l3.281-25.24h4.739ZM98.429.427v3.484h-3.48v21.822h-4.406V3.912h-3.445V.427h11.33ZM86.391.427v25.306h-3.248l-3.278-12.981v12.981H76.22V.427h3.71l2.817 11.207V.427h3.644ZM75.471 22.184v3.484h-8.946V.428h8.912V3.91h-4.506v7h3.744v3.55H70.93v7.723h4.54ZM65.26.427v25.306h-4.243V13.902L59.13 25.734h-2.717l-1.988-11.832v11.832H50.78V.427h5.104l2.02 14.888L60.29.427h4.97ZM49.653.427v20.344c0 3.517-2.188 5.292-5.434 5.292s-5.4-1.775-5.4-5.258V.427h4.373V21.23c0 .953.498 1.446 1.26 1.446.696 0 .994-.493.994-1.48V.428h4.208-.001ZM37.682.427v25.306h-3.248l-3.28-12.981v12.981h-3.645V.427h3.71l2.818 11.207V.427h3.645ZM22.106 21.33V4.733c0-.986-.564-1.38-1.093-1.38-.663 0-1.127.395-1.127 1.38v16.563c0 .953.43 1.38 1.16 1.38.661 0 1.06-.395 1.06-1.348v.002Zm4.373-15.743v14.888c0 4.14-2.485 5.588-5.434 5.588-2.948 0-5.567-1.545-5.567-5.588V5.587C15.48 1.48 18.064 0 21.046 0c2.981 0 5.434 1.446 5.434 5.587ZM14.479.427v25.306h-4.241V13.902L8.35 25.734H5.633L3.645 13.901v11.832H0V.427h5.102l2.022 14.888L9.51.427h4.97Z"/></svg>';
@@ -188,10 +196,12 @@ const SLIDES=[
 /* ── render ── */
 const stage=document.getElementById('stage');
 const N=SLIDES.length, pad=n=>String(n).padStart(2,'0');
-const top_=(s,i)=>`<div class="top"><div>${LOGO}</div><div></div><div></div><div></div><div></div><div><button class="themebtn" title="Switch background (T)" aria-label="Switch background"></button></div></div>`;
+const SPK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" stroke="none"/><path class="off" d="M16 9l5 6M21 9l-5 6"/><path class="on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>';
+const SOUND=`<button class="soundbtn" aria-pressed="false" title="Sound off (M)">${SPK}<span>sound off</span></button>`;
+const top_=(s,i)=>`<div class="top"><div>${LOGO}</div><div></div><div></div><div></div><div></div><div>${(s.media||[]).some(m=>m.video)?SOUND:''}<button class="themebtn" title="Switch background (T)" aria-label="Switch background"></button></div></div>`;
 
 function cell(m){
-  if(m.video) return `<div class="cell vid paused" data-ar="${m.ar}"><video src="${m.video}" poster="${m.poster}" playsinline preload="metadata" ${m.loop?'loop':''} ${m.muted?'data-muted="1"':''}></video><i class="bar"></i></div>`;
+  if(m.video) return `<div class="cell vid paused" data-ar="${m.ar}"><video src="${m.video}" poster="${m.poster}" muted playsinline preload="metadata" ${m.loop?'loop':''} ${m.muted?'data-muted="1"':''}></video><i class="bar"></i></div>`;
   return `<div class="cell ${m.contain?'contain':''}" data-ar="${m.ar}"><img src="${m.src}" alt="${m.credit||''}" ${m.credit?`title="Photo: ${m.credit}"`:''} decoding="async"></div>`;
 }
 function build(s,i){
@@ -235,17 +245,22 @@ addEventListener('resize',fit);fit();
 layoutRows();
 
 /* ── navigation + video ── */
-let cur=0, pendingSound=null;
-function unlockSound(){if(pendingSound&&pendingSound.closest('.slide.on')){pendingSound.muted=false;pendingSound.play().catch(()=>{})}pendingSound=null}
-addEventListener('pointerdown',unlockSound,true);addEventListener('keydown',unlockSound,true);
+let cur=0, soundOn=false;
+/* Sound is off until the viewer turns it on (button or M). Videos flagged muted stay silent. */
+function applySound(){
+  document.body.classList.toggle('sound',soundOn);
+  document.querySelectorAll('video').forEach(v=>{v.muted=!soundOn||v.dataset.muted==='1'});
+  document.querySelectorAll('.soundbtn').forEach(b=>{b.setAttribute('aria-pressed',soundOn);b.title=soundOn?'Sound on (M)':'Sound off (M)';b.querySelector('span').textContent=soundOn?'sound on':'sound off'});
+}
+function toggleSound(){soundOn=!soundOn;applySound()}
+function playV(v){v.muted=!soundOn||v.dataset.muted==='1';v.play().catch(()=>{})}
 function vids(i){return [...els[i].querySelectorAll('video')]}
 function go(i){
   i=Math.max(0,Math.min(N-1,i));
-  vids(cur).forEach(v=>{v.pause()}); pendingSound=null;
+  vids(cur).forEach(v=>{v.pause()});
   els[cur].classList.remove('on'); cur=i; els[cur].classList.add('on');
   history.replaceState(null,'','#'+(cur+1));
-  // first video on the slide plays with sound; the rest play muted alongside it
-  // videos never start on their own: click one (or press K) to play it, with sound
+  // videos never start on their own: click one (or press K) to play it; sound follows the sound button
   vids(cur).forEach(v=>{v.preload='auto'});
   // warm the next slide's media
   if(els[cur+1]) els[cur+1].querySelectorAll('img').forEach(im=>im.decode&&im.decode().catch(()=>{}));
@@ -256,8 +271,9 @@ function go(i){
 /* No clicker: click a video to pause/play it; click anywhere else to advance (left quarter goes back). */
 stage.addEventListener('click',e=>{
   if(e.target.closest('.themebtn')){toggleTheme();return}
+  if(e.target.closest('.soundbtn')){toggleSound();return}
   const c=e.target.closest('.cell.vid');
-  if(c){const v=c.querySelector('video');if(v.paused){v.muted=false;v.play()}else v.pause();return}
+  if(c){const v=c.querySelector('video');if(v.paused)playV(v);else v.pause();return}
   const r=stage.getBoundingClientRect();
   (e.clientX-r.left)<r.width*.25?go(cur-1):go(cur+1);
 });
@@ -278,7 +294,8 @@ addEventListener('keydown',e=>{
   else if(k==='g'||k==='G'||k==='Escape'&&document.body.classList.contains('grid'))toggleGrid();
   else if(k==='n'||k==='N')openNotes();
   else if(k==='t'||k==='T')toggleTheme();
-  else if(k==='k'||k==='K'){const v=vids(cur)[0];if(v){if(v.paused){v.muted=false;v.play()}else v.pause()}}
+  else if(k==='k'||k==='K'){const v=vids(cur)[0];if(v){if(v.paused)playV(v);else v.pause()}}
+  else if(k==='m'||k==='M')toggleSound();
 });
 setTimeout(()=>document.body.classList.remove('hint'),6000);
 
